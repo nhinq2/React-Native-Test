@@ -13,8 +13,10 @@ async function request<T>(path: string, config: RequestConfig = {}): Promise<T> 
     headers: { 'Content-Type': 'application/json', ...init.headers },
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+    const body = await res.json().catch(() => ({})) as { error?: string; errors?: string[] };
+    const err = new Error(body.error ?? `HTTP ${res.status}`);
+    if (body.errors?.length) (err as Error & { errors: string[] }).errors = body.errors;
+    throw err;
   }
   if (res.status === 204) return undefined as T;
   return res.json();
