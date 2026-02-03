@@ -20,3 +20,8 @@ export interface UpdateProjectInput {
   description?: string;
   status?: ProjectStatus;
 }
+
+export interface PaginatedProjects {
+  items: Project[];
+  total: number;
+}

@@ -35,7 +35,7 @@ backend/
 |--------|------|-------------|
 | `GET` | `/health` | Health check (ok, service, env, timestamp) |
 | `GET` | `/api/stats` | Project counts: `{ projects: { total, byStatus } }` |
-| `GET` | `/api/projects` | List projects. Query: `?status=draft|active|completed`, `?sort=updatedAt|createdAt|name`, `?order=asc|desc` |
+| `GET` | `/api/projects` | List projects (paginated). Query: `?status=...`, `?sort=...`, `?order=...`, `?limit=20`, `?offset=0`. Response: `{ items: Project[], total: number }`. |
 | `GET` | `/api/projects/:id` | Get one project |
 | `POST` | `/api/projects` | Create. Body: `{ name, description, status? }` |
 | `PUT` | `/api/projects/:id` | Update. Body: `{ name?, description?, status? }` |

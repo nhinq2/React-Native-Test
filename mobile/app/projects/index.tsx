@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import { fetchProjects } from '../../src/api/projects';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { fetchProjectsPage } from '../../src/api/projects';
 import { useFilterStore } from '../../src/stores/filterStore';
 import type { ProjectStatus } from '../../src/types/project';
+
+const PAGE_SIZE = 20;
 
 const FILTER_OPTIONS: { value: ProjectStatus | null; label: string }[] = [
   { value: null, label: 'All' },
@@ -65,10 +67,25 @@ export default function ProjectsListScreen() {
     error,
     refetch,
     isRefetching,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['projects', status],
-    queryFn: () => fetchProjects(status ?? undefined),
+    queryFn: ({ pageParam }) => fetchProjectsPage(status ?? undefined, pageParam, PAGE_SIZE),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((acc, p) => acc + p.items.length, 0);
+      return loaded < lastPage.total ? loaded : undefined;
+    },
   });
+
+  const projects = data?.pages.flatMap((p) => p.items) ?? [];
+  const totalCount = data?.pages[0]?.total ?? 0;
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -85,7 +102,6 @@ export default function ProjectsListScreen() {
     });
   }, [navigation, router]);
 
-  const projects = data ?? [];
   const hasActiveFilter = status !== null;
   const emptyMessage = hasActiveFilter
     ? `No ${status} projects. Try another filter or create one.`
@@ -155,6 +171,23 @@ export default function ProjectsListScreen() {
               onRefresh={refetch}
               tintColor="#a78bfa"
             />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            projects.length === 0 ? null : (
+              <View style={styles.footer}>
+                {isFetchingNextPage ? (
+                  <ActivityIndicator size="small" color="#a78bfa" />
+                ) : hasNextPage ? (
+                  <Text style={styles.footerText}>Pull up to load more</Text>
+                ) : (
+                  <Text style={styles.footerText}>
+                    {projects.length} of {totalCount} projects
+                  </Text>
+                )}
+              </View>
+            )
           }
           ListEmptyComponent={
             <View style={styles.emptyState} accessibilityLabel={emptyMessage}>
@@ -295,5 +328,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#6366f1',
+  },
+  footer: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#666',
   },
 });

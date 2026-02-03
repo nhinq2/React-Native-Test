@@ -21,18 +21,30 @@ const { validProjectStatuses } = require('../config');
 
 const router = express.Router();
 
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+
 /**
  * GET /api/projects
- * List all projects. Optional ?status=draft|active|completed, ?sort=updatedAt|createdAt|name, ?order=asc|desc.
+ * List projects with pagination.
+ * Query: ?status=draft|active|completed, ?sort=updatedAt|createdAt|name, ?order=asc|desc, ?limit=20, ?offset=0.
+ * Response: { items: Project[], total: number }.
  */
 router.get('/', (req, res, next) => {
   try {
     const status = req.query.status;
     const sort = req.query.sort || 'updatedAt';
     const order = req.query.order || 'desc';
+    let limit = Math.min(parseInt(req.query.limit, 10) || DEFAULT_LIMIT, MAX_LIMIT);
+    if (!Number.isFinite(limit) || limit < 1) limit = DEFAULT_LIMIT;
+    let offset = parseInt(req.query.offset, 10) || 0;
+    if (!Number.isFinite(offset) || offset < 0) offset = 0;
+
     let list = getProjectsByStatus(validProjectStatuses.includes(status) ? status : null);
     list = sortProjects(list, sort, order);
-    res.json(list);
+    const total = list.length;
+    const items = list.slice(offset, offset + limit);
+    res.json({ items, total });
   } catch (err) {
     next(err);
   }

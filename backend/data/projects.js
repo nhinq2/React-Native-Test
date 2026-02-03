@@ -50,6 +50,31 @@ const INITIAL_PROJECTS = [
 
 const projects = [...INITIAL_PROJECTS];
 
+const SEED_TARGET = Math.min(100, 1000);
+const TEMPLATES = [
+  { name: 'Mobile App Redesign', description: 'Modernize the candidate portal mobile experience with React Native.', status: 'active' },
+  { name: 'API Gateway Migration', description: 'Migrate legacy REST endpoints to new gateway with improved auth.', status: 'draft' },
+  { name: 'E2E Test Suite', description: 'Implement Maestro/Detox flows for critical user journeys.', status: 'completed' },
+  { name: 'Design System Consolidation', description: 'Unify component library and tokens across web and mobile apps.', status: 'active' },
+  { name: 'Offline-First Sync', description: 'Add offline support with background sync and conflict resolution.', status: 'draft' },
+];
+function seedProjectsToTarget(target) {
+  while (projects.length < target) {
+    const t = TEMPLATES[projects.length % TEMPLATES.length];
+    const id = String(projects.length + 1);
+    const now = new Date(Date.now() - (target - projects.length) * 3600000).toISOString();
+    projects.push({
+      id,
+      name: `${t.name} #${id}`,
+      description: t.description,
+      status: t.status,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+seedProjectsToTarget(SEED_TARGET);
+
 const VALID_STATUSES = ['draft', 'active', 'completed'];
 const SORT_FIELDS = ['updatedAt', 'createdAt', 'name', 'status'];
 
